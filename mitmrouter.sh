@@ -5,9 +5,9 @@ BR_IFACE="br0"
 WAN_IFACE="enp10s0u2u1u2"
 
 # wifi
-WIFI_IFACE="wlp4s0"
 WIFI_SSID="mywifi"
 WIFI_PASSWORD="ultrasecure"
+WIFI_IFACE="wlp4s0"
 
 # 'virtual' LAN settings
 LAN_IP="192.168.200.1"
@@ -20,13 +20,12 @@ LAN_DNS_SERVER="1.1.1.1"
 DNSMASQ_CONF="tmp_dnsmasq.conf"
 HOSTAPD_CONF="tmp_hostapd.conf"
 
+# SSL mitm proxy port
+SSL_PORT=8081
+
 # remove config files
 rm -f $DNSMASQ_CONF
 rm -f $HOSTAPD_CONF
-
-# SSLsplit settings
-SSL_SPLIT_CONF="sslsplit.conf"
-SSL_SPLIT_PORT=8081
 
 # check if the user provided the correct arguments
 if [ "$1" != "up" ] && [ "$1" != "down" ] || [ $# != 1 ]; then
@@ -51,6 +50,8 @@ sudo ifconfig $WIFI_IFACE down
 sudo brctl delbr $BR_IFACE
 
 if [ $1 = "up" ]; then
+    # stop ufw firewall
+    sudo systemctl stop ufw
 
     echo "== create dnsmasq config file"
     echo "interface=${BR_IFACE}" > $DNSMASQ_CONF
@@ -87,7 +88,7 @@ if [ $1 = "up" ]; then
     # Add SSLsplit redirection rule
     # comment this two lines if you don't want to intercept SSL traffic (you can still view it with WireShark, but encrypted)
     echo "== setting up SSLsplit for traffic interception"
-    sudo iptables -t nat -A PREROUTING -i $BR_IFACE -p tcp --dport 443 -j REDIRECT --to-ports $SSL_SPLIT_PORT
+    sudo iptables -t nat -A PREROUTING -i $BR_IFACE -p tcp --dport 443 -j REDIRECT --to-ports $SSL_PORT
     
     echo "== setting static IP on bridge interface"
     sudo ifconfig br0 inet $LAN_IP netmask $LAN_SUBNET
@@ -108,4 +109,7 @@ else
     sudo brctl delbr $BR_IFACE
     sudo iptables --flush
     sudo iptables -t nat --flush
+
+    # start ufw firewall
+    sudo systemctl start ufw
 fi

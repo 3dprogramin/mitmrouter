@@ -33,18 +33,17 @@ The `./mitmrouter.sh up` command will bring the mitm router network up
 The `./mitmrouter.sh down` command will bring down all the mitm router components
 
 
-### sslstrip
+### sslproxy
 
-First, generate SSL certificates with: `./generate_certs.sh`
-
-Then you can run SSLsplit to intercept TLS traffic: `./sslstrip.sh`
-
-The SSL / TLS traffic interception and decryption to succeed, depends on how the device is handling the TLS communication. If the device is actually validating the SSL certificate, this attack won't work. However, a good percentage of devices do not check for the certificate and trust anything that they're presented with.
+This script uses sslstrip or mitmproxy to start an interception proxy for HTTPS requests.
+The success of this depends on how the device is handling TLS communication. If the device is actually validating the SSL certificate, this attack won't work. However, a good percentage of devices do not check for the certificate and trust anything that they're presented with.
 
 If the traffic cannot be decrypted correctly, you can comment this line in mitm.sh:
 ```
-sudo iptables -t nat -A PREROUTING -i $BR_IFACE -p tcp --dport 443 -j REDIRECT --to-ports $SSL_SPLIT_PORT
+sudo iptables -t nat -A PREROUTING -i $BR_IFACE -p tcp --dport 443 -j REDIRECT --to-ports $SSL_PORT
 ```
+
+When commented, you'll still be able to view the rest of the traffic in Wireshark and HTTPS traffic will work correctly, but encrypted.
 
 ### Credits
 
